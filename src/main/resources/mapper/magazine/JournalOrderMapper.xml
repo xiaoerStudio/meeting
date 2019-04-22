@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.meeting.modules.magazine.mapper.JournalOrderMapper">
+
+    <resultMap id="Base_ResultMap" type="com.meeting.modules.magazine.entity.JournalOrderEntity">
+        <id column="id" property="id"/>
+        <result column="ip" property="ip"/>
+        <result column="is_deleted" property="isDeleted"/>
+        <result column="journal_id" property="journalId"/>
+        <result column="journal_img" property="journalImg"/>
+        <result column="journal_title" property="journalTitle"/>
+        <result column="openid" property="openid"/>
+        <result column="out_trade_no" property="outTradeNo"/>
+        <result column="state" property="state"/>
+        <result column="total_fee" property="totalFee"/>
+        <result column="user_id" property="userId"/>
+        <result column="create_time" property="createTime"/>
+        <result column="notify_time" property="notifyTime"/>
+    </resultMap>
+
+    <resultMap id="Base_ResultMap_Vo" type="com.meeting.modules.magazine.vo.JournalOrderVo">
+        <id column="id" property="id"/>
+        <result column="ip" property="ip"/>
+        <result column="is_deleted" property="isDeleted"/>
+        <result column="journal_id" property="journalId"/>
+        <result column="journal_img" property="journalImg"/>
+        <result column="journal_title" property="journalTitle"/>
+        <result column="openid" property="openid"/>
+        <result column="out_trade_no" property="outTradeNo"/>
+        <result column="state" property="state"/>
+        <result column="total_fee" property="totalFee"/>
+        <result column="user_id" property="userId"/>
+        <result column="create_time" property="createTime"/>
+        <result column="userName" property="userName"/>
+        <result column="notify_time" property="notifyTime"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        j.id,j.openid,j.out_trade_no,j.create_time,j.total_fee,j.journal_id,j.journal_title,j.journal_img,j.user_id,j.ip,j.is_deleted,j.state,j.notify_time
+    </sql>
+
+    <select id="pageTerm" resultMap="Base_ResultMap_Vo">
+        SELECT
+        <include refid="Base_Column_List"/>
+        ,(SELECT s.username FROM sys_user as s WHERE s.user_id = j.user_id) AS userName
+        FROM journal_order as j WHERE j.is_deleted = 0
+        <if test="journalTitle != null and journalTitle != ''">
+            AND j.journal_title like CONCAT('%',#{ journalTitle },'%')
+        </if>
+        <if test="outTradeNo != null and outTradeNo != ''">
+            AND j.out_trade_no = #{outTradeNo}
+        </if>
+        <if test="userName != null and userName != ''">
+            AND j.user_id IN (SELECT u.user_id  FROM sys_user AS u WHERE u.username LIKE  CONCAT('%',#{userName},'%') )
+        </if>
+        LIMIT #{startLimit} , ${limit}
+    </select>
+
+    <select id="pageCount" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM journal_order WHERE is_deleted = 0
+        <if test="journalTitle != null and journalTitle != ''">
+            AND journal_title like CONCAT('%',#{ journalTitle },'%')
+        </if>
+        <if test="outTradeNo != null and outTradeNo != ''">
+            AND out_trade_no = #{outTradeNo}
+        </if>
+    </select>
+
+    <select id="info" resultMap="Base_ResultMap_Vo">
+        SELECT
+        <include refid="Base_Column_List"/>
+        ,(SELECT username FROM sys_user as u WHERE u.user_id = j.user_id ) AS userName
+        FROM journal_order AS j
+        WHERE j.id = #{id}
+    </select>
+
+    <select id="findByOutTradeNo" resultMap="Base_ResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM journal_order AS j
+        WHERE j.out_trade_no = #{outTradeNo}
+    </select>
+
+    <!-- 根据流水号更新数据 -->
+    <update id="updateJournalOrderByOutTradeNo">
+        update `journal_order` set state = #{state}, notify_time = #{notifyTime}, openid = #{openid} where out_trade_no = #{outTradeNo} and state = 0 and is_deleted = 0
+    </update>
+
+    <update id="deleteByIds">
+        update journal_order set is_deleted = 1
+        where  is_deleted = 0
+        and id in
+        <foreach item="id" collection="ids" open="("
+                 separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+</mapper>
